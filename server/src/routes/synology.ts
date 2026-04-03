@@ -472,38 +472,41 @@ router.get('/assets/:photoId/info', authenticate, async (req: Request, res: Resp
     const result = await callSynologyApi<any>(targetUserId, {
       api: 'SYNO.Foto.Browse.Item',
       method: 'get',
-      version: 2,
-      id: Number(parsedId.id),
-      additional: ['thumbnail', 'resolution', 'exif', 'gps', 'address', 'orientation', 'description'],
+      version: 5,
+      id: `[${parsedId.id}]`,
+      additional: ['resolution', 'exif', 'gps', 'address', 'orientation', 'description'],
     });
     if (!result.success || !result.data) {
       return res.status(404).json({ error: 'Photo not found' });
     }
     
-
-    const exif = result.data.additional?.exif || {};
-    const address = result.data.additional?.address || {};
-    const gps = result.data.additional?.gps || {};
+    const metadata = result.data.list[0];
+    console.log(metadata);
+    const exif = metadata.additional?.exif || {};
+    const address = metadata.additional?.address || {};
+    const gps = metadata.additional?.gps || {};
     res.json({
-      id: result.data.id,
-      takenAt: result.data.time ? new Date(result.data.time * 1000).toISOString() : null,
-      width: result.data.additional?.resolution?.width || null,
-      height: result.data.additional?.resolution?.height || null,
-      camera: exif.model || null,
-      lens: exif.lens_model || null,
-      focalLength: exif.focal_length ? `${exif.focal_length}mm` : null,
-      aperture: exif.f_number ? `f/${exif.f_number}` : null,
-      shutter: exif.exposure_time || null,
-      iso: exif.iso_speed_ratings || null,
+      id: photoId,
+      takenAt: metadata.time ? new Date(metadata.time * 1000).toISOString() : null,
       city: address.city || null,
-      state: address.state || null,
       country: address.country || null,
+      state: address.state || null,
+      camera: exif.camera || null,
+      lens: exif.lens || null,
+      focalLength: exif.focal_length || null,
+      aperture: exif.aperture || null,
+      shutter: exif.exposure_time || null,
+      iso: exif.iso || null,
       lat: gps.latitude || null,
       lng: gps.longitude || null,
-      orientation: result.data.additional?.orientation || null,
-      description: result.data.additional?.description || null,
-      fileSize: result.data.filesize || null,
-      fileName: result.data.filename || null,
+      orientation: metadata.additional?.orientation || null,
+      description: metadata.additional?.description || null,
+      filename: metadata.filename || null,
+      filesize: metadata.filesize || null,
+      width: metadata.additional?.resolution?.width || null,
+      height: metadata.additional?.resolution?.height || null,
+      fileSize: metadata.filesize || null,
+      fileName: metadata.filename || null,
     });
   } catch (err: unknown) {
     res.status(502).json({ error: err instanceof Error ? err.message : 'Could not reach Synology'});
