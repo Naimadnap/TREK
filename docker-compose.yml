@@ -2,7 +2,7 @@ services:
   app:
     image: mauriceboe/trek:latest
     container_name: trek
-    read_only: true
+    read_only: false
     security_opt:
       - no-new-privileges:true
     cap_drop:
